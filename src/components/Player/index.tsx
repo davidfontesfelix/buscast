@@ -1,37 +1,43 @@
+import { MyContextAPIRequest } from '@/contexts/APIRequestContext'
 import { MyContextAutoPlay } from '@/contexts/autoPlayContext'
 import axios from 'axios'
 import Image from 'next/image'
-import { useContext, useEffect, useRef, useState } from 'react'
+import {
+  Dispatch,
+  SetStateAction,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 
 interface playerProps {
-  idAudio: number
-  setIdAudio: any
+  audioId: number
+  setAudioId: Dispatch<SetStateAction<number>>
   playOrPause: string
-  setPlayOrPause: any
+  setPlayOrPause: Dispatch<SetStateAction<string>>
 }
 
 type episode = {
-  id: string
-  title: string
-  link: string
-  date: string
+  id?: string
+  title?: string
+  link?: string
+  date?: string
 }
 
 export default function Player(props: playerProps) {
-  const [episodeAudio, setEpisodeAudio] = useState<episode | any>({})
-  const [durationEp, setDurationEp] = useState(0)
+  const [audioInformation, setAudioInformation] = useState<episode>({})
+  const [episodeDuration, setEpisodeDuration] = useState(0)
   const [buttonDisabled, setButtonDisabled] = useState(true)
+  const { episodesData } = useContext(MyContextAPIRequest)
 
   const audioRef = useRef<HTMLAudioElement>(null)
   const audio = audioRef.current
 
   const { autoPlay, setAutoPlay } = useContext(MyContextAutoPlay)
   useEffect(() => {
-    axios
-      .get(`https://api-buscast.vercel.app/episode/${props.idAudio}`)
-      .then((response) => setEpisodeAudio(response.data))
-    console.log(props.idAudio)
-  }, [props.idAudio])
+    setAudioInformation(episodesData[props.audioId - 1])
+  }, [episodesData, props.audioId])
 
   useEffect(() => {
     audio?.play()
@@ -42,7 +48,7 @@ export default function Player(props: playerProps) {
   }, [audio, autoPlay, setAutoPlay])
 
   useEffect(() => {
-    if (props.idAudio > 0) {
+    if (props.audioId > 0) {
       setButtonDisabled(false)
     }
   }, [props])
@@ -69,18 +75,21 @@ export default function Player(props: playerProps) {
     }
   }
   const HandleClickNextEpisode = () => {
-    props.setIdAudio(props.idAudio + 1)
-    console.log(props.idAudio)
+    if (props.audioId === 2) {
+      audio?.play()
+    } else {
+      props.setAudioId(props.audioId + 1)
+    }
     setTimeout(() => {
       props.setPlayOrPause('pause')
       audio?.play()
     }, 200)
   }
   const HandleClickPreviousEpisode = () => {
-    if (props.idAudio === 1) {
+    if (props.audioId === 1) {
       audio?.play()
     } else {
-      props.setIdAudio(props.idAudio - 1)
+      props.setAudioId(props.audioId - 1)
     }
     setTimeout(() => {
       props.setPlayOrPause('pause')
@@ -89,7 +98,7 @@ export default function Player(props: playerProps) {
   }
   const tempUpdate = () => {
     if (audio != null) {
-      setDurationEp(Math.floor((audio.currentTime / audio.duration) * 100))
+      setEpisodeDuration(Math.floor((audio.currentTime / audio.duration) * 100))
 
       if (audio.currentTime === audio.duration) {
         props.setPlayOrPause('play')
@@ -97,89 +106,91 @@ export default function Player(props: playerProps) {
     }
   }
   return (
-    <section className="w-full h-full pb-10 flex justify-center items-center dark:bg-Dark dark:border-none">
+    <section className="w-full h-full lg:w-[65vw] pb-10 flex justify-center items-center dark:bg-Dark dark:border-none">
       <div className="flex flex-col items-center">
-        <div className="bg-Blue rounded w-[332px] h-[332px] relative">
+        <div className="bg-Blue rounded w-[332px] h-[332px] lg:w-[60vw] lg:h-[70vh] relative">
           <h1 className=" text-white text-7xl absolute bottom-8 left-7 font-bold">
             Episódio Piloto
           </h1>
         </div>
-        <div className="mt-4 flex gap-5">
-          <button onClick={() => HandleClickPreviousEpisode()}>
-            <Image
-              width={36}
-              height={36}
-              alt=""
-              src={'/assets/icons/skip_previous.svg'}
-            />
-          </button>
-          <button onClick={() => HandleClickBack5seconds()}>
-            <Image
-              width={36}
-              height={36}
-              alt=""
-              src={'/assets/icons/forward_5.svg'}
-            />
-          </button>
-          {props.playOrPause === 'play' ? (
-            <button
-              disabled={buttonDisabled}
-              onClick={() => HandleClickPlayAudio()}
-              className={`bg-BlueLight p-3 rounded-full ${
-                props.idAudio === 0 && 'grayscale'
-              }`}
-            >
+        <div className="flex flex-col items-center lg:flex-col-reverse">
+          <div className="mt-4 flex gap-5">
+            <button onClick={() => HandleClickPreviousEpisode()}>
               <Image
                 width={36}
                 height={36}
                 alt=""
-                src={'/assets/icons/play_arrow.svg'}
+                src={'/assets/icons/skip_previous.svg'}
               />
             </button>
-          ) : (
-            <button
-              disabled={buttonDisabled}
-              onClick={() => HandleClickPlayAudio()}
-              className="bg-BlueLight rounded-full "
-            >
+            <button onClick={() => HandleClickBack5seconds()}>
               <Image
-                width={60}
-                height={60}
+                width={36}
+                height={36}
                 alt=""
-                src={'/assets/icons/pause.svg'}
+                src={'/assets/icons/forward_5.svg'}
               />
             </button>
-          )}
+            {props.playOrPause === 'play' ? (
+              <button
+                disabled={buttonDisabled}
+                onClick={() => HandleClickPlayAudio()}
+                className={`bg-BlueLight p-3 rounded-full ${
+                  props.audioId === 0 && 'grayscale'
+                }`}
+              >
+                <Image
+                  width={36}
+                  height={36}
+                  alt=""
+                  src={'/assets/icons/play_arrow.svg'}
+                />
+              </button>
+            ) : (
+              <button
+                disabled={buttonDisabled}
+                onClick={() => HandleClickPlayAudio()}
+                className="bg-BlueLight rounded-full "
+              >
+                <Image
+                  width={60}
+                  height={60}
+                  alt=""
+                  src={'/assets/icons/pause.svg'}
+                />
+              </button>
+            )}
 
-          <button onClick={() => HandleClickSkip10seconds()}>
-            <Image
-              width={36}
-              height={36}
-              alt=""
-              src={'/assets/icons/forward_10.svg'}
-            />
-          </button>
-          <button onClick={() => HandleClickNextEpisode()}>
-            <Image
-              width={36}
-              height={36}
-              alt=""
-              src={'/assets/icons/skip_next.svg'}
-            />
-          </button>
-        </div>
-        <div className="mt-5">
-          <div className="w-[332px] h-[10px] bg-[#B3B3B3] rounded-[100px]">
-            <div
-              className={`h-full bg-BlueLight rounded-[100px] transition-all`}
-              style={{ width: `${durationEp}%` }}
-            ></div>
+            <button onClick={() => HandleClickSkip10seconds()}>
+              <Image
+                width={36}
+                height={36}
+                alt=""
+                src={'/assets/icons/forward_10.svg'}
+              />
+            </button>
+            <button onClick={() => HandleClickNextEpisode()}>
+              <Image
+                width={36}
+                height={36}
+                alt=""
+                src={'/assets/icons/skip_next.svg'}
+              />
+            </button>
+          </div>
+          <div className="mt-5">
+            <div className="w-[332px] h-[10px] bg-[#B3B3B3] rounded-[100px] lg:w-[60vw]">
+              <div
+                className={`h-full bg-BlueLight rounded-[100px] transition-all`}
+                style={{ width: `${episodeDuration}%` }}
+              ></div>
+            </div>
           </div>
         </div>
       </div>
       <audio
         ref={audioRef}
-        src={episodeAudio.link}
+        src={audioInformation?.link}
         onTimeUpdate={tempUpdate}
       ></audio>
     </section>

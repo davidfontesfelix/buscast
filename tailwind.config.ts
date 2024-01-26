@@ -14,6 +14,10 @@ const config: Config = {
         Blue: '#131E59',
         BlueLight: '#1D4ED8',
       },
+      fontFamily: {
+        familjenGrotesk: 'var(--font-familjen-grotesk)',
+        JetBrainsMono: 'var(--font-jetbrains-monos)',
+      },
     },
   },
   plugins: [],
